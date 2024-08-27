@@ -2,6 +2,13 @@
 name = "wakatime-ls"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/bestgopher/wakatime-zed"
+
 
 [dependencies]
+arc-swap = "1.7.1"
+chrono = "0.4.38"
+clap = "4.5.16"
 tokio = { version = "1.39.3", features = ["full"] }
+tower-lsp = "0.20.0"
+url = "2.5.2"
