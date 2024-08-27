@@ -1,0 +1,41 @@
+id = "wakatime"
+name = "wakatime"
+description = "Wakatime support."
+version = "0.0.1"
+schema_version = 1
+authors = ["bestgopher <84328409@qq.com>"]
+repository = "https://github.com/bestgopher/wakatime-zed"
+
+[language_servers.wakatime]
+name = "wakatime"
+languages = [
+    "C",
+    "Clojure",
+    "CSharp",
+    "CSS",
+    "Dart",
+    "Elixir",
+    "Elm",
+    "Erlang",
+    "FSharp",
+    "Gleam",
+    "Go",
+    "Haskell",
+    "HTML",
+    "JavaScript",
+    "JSON",
+    "JSONC",
+    "Julia",
+    "Markdown",
+    "OCaml",
+    "PureScript",
+    "Ruby",
+    "Rust",
+    "SCSS",
+    "SQL",
+    "TOML",
+    "TSX",
+    "TypeScript",
+    "YAML",
+    "Zig",
+]
