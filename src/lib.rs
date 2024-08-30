@@ -64,7 +64,7 @@ impl WakatimeExtension {
         let binary_path = if binary == "wakatime-cli" {
             format!("{version_dir}/{target_triple}")
         } else {
-            format!("{version_dir}/{target_triple}/{binary}")
+            format!("{version_dir}/{binary}")
         };
 
         if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
@@ -85,11 +85,15 @@ impl WakatimeExtension {
 
             for entry in entries {
                 let entry = entry.map_err(|err| format!("failed to load directory entry {err}"))?;
-                if entry.file_name().to_str() != Some(&version_dir) {
-                    fs::remove_dir_all(entry.path()).ok();
+                if let Some(file_name) = entry.file_name().to_str() {
+                    if file_name.starts_with(binary) && file_name != version_dir {
+                        fs::remove_dir_all(entry.path()).ok();
+                    }
                 }
             }
         }
+
+        zed::make_file_executable(&binary_path)?;
 
         Ok(binary_path)
     }
@@ -144,8 +148,6 @@ impl WakatimeExtension {
 
         let binary_path =
             self.download(language_server_id, "wakatime-cli", "wakatime/wakatime-cli")?;
-
-        zed::make_file_executable(&binary_path)?;
 
         self.cached_wakatime_cli_binary_path = Some(binary_path.clone());
 
