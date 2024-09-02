@@ -77,28 +77,17 @@ impl WakatimeLanguageServer {
             command.arg("--cursorpos").arg(cursorpos.to_string());
         }
 
-        self.client
-            .log_message(MessageType::LOG, format!("command: {:?}", command.as_std()))
-            .await;
-
-        match command.output().await {
-            Err(e) => {
-                self.client
-                    .log_message(
-                        MessageType::LOG,
-                        format!("Wakatime language server send msg faild: {e:?}"),
-                    )
-                    .await
-            }
-            Ok(o) => {
-                self.client
-                    .log_message(
-                        MessageType::ERROR,
-                        format!("Wakatime language server send msg successful: {o:?}"),
-                    )
-                    .await
-            }
-        }
+        if let Err(e) = command.output().await {
+            self.client
+                .log_message(
+                    MessageType::LOG,
+                    format!(
+                        "Wakatime language server send msg faild: {e:?}, command: {:?}",
+                        command.as_std()
+                    ),
+                )
+                .await;
+        };
 
         current_file.uri = event.uri;
         current_file.timestamp = now;
@@ -170,9 +159,17 @@ impl LanguageServer for WakatimeLanguageServer {
         let event = Event {
             uri: params.text_document.uri[url::Position::BeforeUsername..].to_string(),
             is_write: false,
-            lineno: None, // todo
+            lineno: params
+                .content_changes
+                .get(0)
+                .map_or_else(|| None, |c| c.range)
+                .map(|c| c.start.line as u64),
             language: None,
-            cursorpos: None,
+            cursorpos: params
+                .content_changes
+                .get(0)
+                .map_or_else(|| None, |c| c.range)
+                .map(|c| c.start.character as u64),
         };
 
         self.send(event).await;
