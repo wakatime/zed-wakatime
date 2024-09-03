@@ -26,3 +26,6 @@ Zed setting.Open zed setting file, add your api key
   }
 }
 ```
+
+## Note
+This plugin has been thoroughly tested only on macOS. If you encounter any issues on other systems, please submit an issue or a pull request.

@@ -1,3 +1,3 @@
-# code-stats-ls
+# wakatime-ls
 
 A language server for [Wakatime](https://wakatime.com/).
