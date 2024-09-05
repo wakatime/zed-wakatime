@@ -4,6 +4,10 @@ A [Wakatime](https://wakatime.com/) extension for [Zed](https://zed.dev/).
 
 Uses the [wakatime-ls](https://github.com/bestgopher/wakatime-zed/tree/master/wakatime-ls) to receive edit events from Zed and send hearbeats to Wakatime by [wakatime-cli](https://github.com/wakatime/wakatime-cli).
 
+## Install
+Search "wakatime" in extension page, and install it.
+![type install](./images/install.png)
+
 ## Configuration
 In order to authenticate with the Wakatime-cli, the language server needs to know your API token.
 Here are two ways to set the lsp.
