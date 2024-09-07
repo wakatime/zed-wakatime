@@ -10,20 +10,7 @@ struct WakatimeExtension {
 }
 
 impl WakatimeExtension {
-    fn download(
-        &self,
-        language_server_id: &LanguageServerId,
-        binary: &str,
-        repo: &str,
-    ) -> Result<String> {
-        let release = zed::latest_github_release(
-            repo,
-            zed::GithubReleaseOptions {
-                require_assets: true,
-                pre_release: false,
-            },
-        )?;
-
+    fn target_triple(&self, binary: &str) -> Result<String, String> {
         let (platform, arch) = zed::current_platform();
         let (arch, os) = {
             let arch = match arch {
@@ -47,11 +34,27 @@ impl WakatimeExtension {
             (arch, os)
         };
 
-        let target_triple = if binary == "wakatime-cli" {
-            format!("{binary}-{os}-{arch}")
-        } else {
-            format!("{binary}-{arch}-{os}")
-        };
+        Ok(match binary {
+            "wakatime-cli" => format!("{binary}-{os}-{arch}"),
+            _ => format!("{binary}-{arch}-{os}"),
+        })
+    }
+
+    fn download(
+        &self,
+        language_server_id: &LanguageServerId,
+        binary: &str,
+        repo: &str,
+    ) -> Result<String> {
+        let release = zed::latest_github_release(
+            repo,
+            zed::GithubReleaseOptions {
+                require_assets: true,
+                pre_release: false,
+            },
+        )?;
+
+        let target_triple = self.target_triple(binary)?;
 
         let asset_name = format!("{target_triple}.zip");
         let asset = release
@@ -109,6 +112,11 @@ impl WakatimeExtension {
         );
 
         if let Some(path) = worktree.which("wakatime-ls") {
+            return Ok(path.clone());
+        }
+
+        let target_triple = self.target_triple("wakatime-ls")?;
+        if let Some(path) = worktree.which(&target_triple) {
             return Ok(path.clone());
         }
 
