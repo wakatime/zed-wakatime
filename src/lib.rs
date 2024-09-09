@@ -1,8 +1,6 @@
 use std::fs;
 
-use zed_extension_api::{
-    self as zed, settings::LspSettings, Command, LanguageServerId, Result, Worktree,
-};
+use zed_extension_api::{self as zed, Command, LanguageServerId, Result, Worktree};
 
 struct WakatimeExtension {
     cached_ls_binary_path: Option<String>,
@@ -181,9 +179,7 @@ impl zed::Extension for WakatimeExtension {
 
         let ls_binary_path = self.language_server_binary_path(language_server_id, worktree)?;
 
-        let setting = LspSettings::for_worktree("wakatime", worktree)?;
-
-        let mut args = vec!["--wakatime-cli".to_string(), {
+        let args = vec!["--wakatime-cli".to_string(), {
             use std::env;
             let current = env::current_dir().unwrap();
             let waka_cli = current
@@ -194,14 +190,6 @@ impl zed::Extension for WakatimeExtension {
 
             waka_cli
         }];
-        if let Some(ref value) = setting.settings {
-            if let Some(y) = value.get("api-key") {
-                if let Some(x) = y.as_str() {
-                    args.push("--api-key".to_string());
-                    args.push(x.to_string());
-                }
-            }
-        }
 
         Ok(Command {
             args,

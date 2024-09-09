@@ -3,8 +3,15 @@ use std::sync::Arc;
 use arc_swap::ArcSwap;
 use chrono::{DateTime, Local, TimeDelta};
 use clap::{Arg, Command};
+use serde::Deserialize;
 use tokio::{process::Command as TokioCommand, sync::Mutex};
 use tower_lsp::{jsonrpc::Result, lsp_types::*, Client, LanguageServer, LspService, Server};
+
+#[derive(Deserialize, Default)]
+struct Setting {
+    api_key: Option<String>,
+    api_url: Option<String>,
+}
 
 #[derive(Default, Debug)]
 struct Event {
@@ -23,8 +30,8 @@ struct CurrentFile {
 
 struct WakatimeLanguageServer {
     client: Client,
+    settings: ArcSwap<Setting>,
     wakatime_path: String,
-    api_key: Option<String>,
     current_file: Mutex<CurrentFile>,
     platform: ArcSwap<String>,
 }
@@ -59,8 +66,14 @@ impl WakatimeLanguageServer {
             command.arg("--plugin").arg(self.platform.load().as_str());
         }
 
-        if let Some(ref key) = self.api_key {
+        let settings = self.settings.load();
+
+        if let Some(ref key) = settings.api_key {
             command.arg("--key").arg(key);
+        }
+
+        if let Some(ref api_url) = settings.api_url {
+            command.arg("--api-url").arg(api_url);
         }
 
         if let Some(ref language) = event.language {
@@ -76,6 +89,13 @@ impl WakatimeLanguageServer {
         if let Some(cursorpos) = event.cursorpos {
             command.arg("--cursorpos").arg(cursorpos.to_string());
         }
+
+        self.client
+            .log_message(
+                MessageType::LOG,
+                format!("Wakatime  command: {:?}", command.as_std()),
+            )
+            .await;
 
         if let Err(e) = command.output().await {
             self.client
@@ -201,16 +221,13 @@ async fn main() {
                 .help("wakatime-cli path")
                 .required(true),
         )
-        .arg(
-            Arg::new("api-key")
-                .short('k')
-                .long("api-key")
-                .help("the api key of wakatime-cli"),
-        )
         .get_matches();
 
-    let wakatime_cli = matches.get_one::<String>("wakatime-cli").unwrap();
-    let api_key = matches.get_one::<String>("api-key").map(|x| x.to_string());
+    let wakatime_cli = if let Some(s) = matches.get_one::<String>("wakatime-cli") {
+        s.to_string()
+    } else {
+        "wakatime-cli".to_string()
+    };
 
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
@@ -218,8 +235,8 @@ async fn main() {
     let (service, socket) = LspService::new(|client| {
         Arc::new(WakatimeLanguageServer {
             client,
-            wakatime_path: wakatime_cli.to_string(),
-            api_key,
+            settings: ArcSwap::from_pointee(Setting::default()),
+            wakatime_path: wakatime_cli,
             platform: ArcSwap::from_pointee(String::new()),
             current_file: Mutex::new(CurrentFile {
                 uri: String::new(),

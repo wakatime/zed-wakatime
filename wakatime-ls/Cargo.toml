@@ -9,6 +9,8 @@ repository = "https://github.com/bestgopher/wakatime-zed"
 arc-swap = "1.7.1"
 chrono = "0.4.38"
 clap = "4.5.16"
+serde = "1.0.210"
+serde_json = "1.0.128"
 tokio = { version = "1.39.3", features = ["full"] }
 tower-lsp = "0.20.0"
 url = "2.5.2"
