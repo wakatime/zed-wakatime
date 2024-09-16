@@ -1,6 +1,6 @@
 [package]
 name = "wakatime-zed"
-version = "0.1.2"
+version.workspace = true
 edition = "2021"
 
 [dependencies]
@@ -12,6 +12,9 @@ crate-type = ["cdylib"]
 
 [workspace]
 members = ["wakatime-ls"]
+
+[workspace.package]
+version = "0.1.2"
 
 [profile.dist]
 inherits = "release"
