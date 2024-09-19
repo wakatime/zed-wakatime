@@ -1,18 +1,18 @@
-# wakatime-zed
+# zed-wakatime
 
-A [Wakatime](https://wakatime.com/) extension for [Zed](https://zed.dev/).
+A [WakaTime](https://wakatime.com/) extension for [Zed](https://zed.dev/).
 
-Uses the [wakatime-ls](https://github.com/bestgopher/wakatime-zed/tree/master/wakatime-ls) to receive edit events from Zed and send hearbeats to Wakatime by [wakatime-cli](https://github.com/wakatime/wakatime-cli).
+Uses the [wakatime-ls](https://github.com/wakatime/zed-wakatime/tree/master/wakatime-ls) to receive edit events from Zed and send hearbeats to WakaTime by [wakatime-cli](https://github.com/wakatime/wakatime-cli).
 
 ## Install
 Search "wakatime" in extension page, and install it.
 ![type install](./images/install.png)
 
 ## Configuration
-In order to authenticate with the Wakatime-cli, the language server needs to know your API token.
+In order to authenticate with the wakatime-cli, the language server needs to know your API token.
 Here are two ways to set the lsp.
 
-### Wakatime configuration file
+### WakaTime configuration file
 create a file named `.wakatime.cfg`, locate your HOME directory.
 ```toml
 [settings]

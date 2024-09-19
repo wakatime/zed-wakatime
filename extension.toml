@@ -4,7 +4,7 @@ description = "Wakatime support."
 version = "0.1.2"
 schema_version = 1
 authors = ["bestgopher <84328409@qq.com>"]
-repository = "https://github.com/bestgopher/wakatime-zed"
+repository = "https://github.com/wakatime/zed-wakatime"
 
 [language_servers.wakatime]
 name = "wakatime"

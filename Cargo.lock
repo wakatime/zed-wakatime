@@ -964,7 +964,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wakatime-zed"
+name = "zed-wakatime"
 version = "0.1.2"
 dependencies = [
  "zed_extension_api",

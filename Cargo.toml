@@ -1,5 +1,5 @@
 [package]
-name = "wakatime-zed"
+name = "zed-wakatime"
 version.workspace = true
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 zed_extension_api = "0.0.6"
 
 [lib]
-name = "wakatime_zed"
+name = "zed_wakatime"
 crate-type = ["cdylib"]
 
 [workspace]

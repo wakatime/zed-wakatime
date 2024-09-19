@@ -125,7 +125,7 @@ impl WakatimeExtension {
         }
 
         let binary_path =
-            self.download(language_server_id, "wakatime-ls", "bestgopher/wakatime-zed")?;
+            self.download(language_server_id, "wakatime-ls", "wakatime/zed-wakatime")?;
 
         self.cached_ls_binary_path = Some(binary_path.clone());
 

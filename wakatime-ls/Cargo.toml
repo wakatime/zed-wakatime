@@ -2,7 +2,7 @@
 name = "wakatime-ls"
 version.workspace = true
 edition = "2021"
-repository = "https://github.com/bestgopher/wakatime-zed"
+repository = "https://github.com/wakatime/zed-wakatime"
 
 
 [dependencies]
