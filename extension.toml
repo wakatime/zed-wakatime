@@ -9,6 +9,10 @@ repository = "https://github.com/wakatime/zed-wakatime"
 [language_servers.wakatime]
 name = "wakatime"
 languages = [
+    "AsciiDoc",
+    "Astro",
+    "Bash",
+    "Biome",
     "C",
     "Clojure",
     "CSharp",
