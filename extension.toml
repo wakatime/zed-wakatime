@@ -46,6 +46,7 @@ languages = [
     "Nix",
     "OCaml",
     "PureScript",
+    "Python",
     "Racket",
     "Roc",
     "Ruby",
