@@ -14,6 +14,7 @@ languages = [
     "Bash",
     "Biome",
     "C",
+    "C++",
     "Clojure",
     "CSharp",
     "CSS",
