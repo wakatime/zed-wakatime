@@ -213,7 +213,7 @@ async fn main() {
     let matches = Command::new("wakatime_ls")
         .version(env!("CARGO_PKG_VERSION"))
         .author("bestgopher <84328409@qq.com>")
-        .about("A simple wakaTime language server tool")
+        .about("A simple WakaTime language server tool")
         .arg(
             Arg::new("wakatime-cli")
                 .short('p')
