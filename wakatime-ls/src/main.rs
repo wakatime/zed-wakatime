@@ -119,7 +119,7 @@ impl LanguageServer for WakatimeLanguageServer {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         if let Some(ref client_info) = params.client_info {
             let mut platform = String::new();
-            platform.push_str(client_info.name.as_str());
+            platform.push_str("Zed");
 
             if let Some(ref version) = client_info.version {
                 platform.push('/');
@@ -127,14 +127,7 @@ impl LanguageServer for WakatimeLanguageServer {
             }
 
             platform.push(' ');
-            platform.push_str(
-                format!(
-                    "{}-wakatime/{}",
-                    client_info.name.as_str(),
-                    env!("CARGO_PKG_VERSION")
-                )
-                .as_str(),
-            );
+            platform.push_str(format!("Zed-wakatime/{}", env!("CARGO_PKG_VERSION")).as_str());
 
             self.platform.store(Arc::new(platform));
         }
