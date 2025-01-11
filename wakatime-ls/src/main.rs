@@ -19,7 +19,7 @@ struct Event {
     is_write: bool,
     language: Option<String>,
     lineno: Option<u64>,
-    cursorpos: Option<u64>,
+    cursor_pos: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -86,8 +86,8 @@ impl WakatimeLanguageServer {
             command.arg("--lineno").arg(lineno.to_string());
         }
 
-        if let Some(cursorpos) = event.cursorpos {
-            command.arg("--cursorpos").arg(cursorpos.to_string());
+        if let Some(cursor_pos) = event.cursor_pos {
+            command.arg("--cursorpos").arg(cursor_pos.to_string());
         }
 
         self.client
@@ -162,7 +162,7 @@ impl LanguageServer for WakatimeLanguageServer {
             is_write: false,
             lineno: None,
             language: Some(params.text_document.language_id.clone()),
-            cursorpos: None,
+            cursor_pos: None,
         };
 
         self.send(event).await;
@@ -178,7 +178,7 @@ impl LanguageServer for WakatimeLanguageServer {
                 .map_or_else(|| None, |c| c.range)
                 .map(|c| c.start.line as u64),
             language: None,
-            cursorpos: params
+            cursor_pos: params
                 .content_changes
                 .get(0)
                 .map_or_else(|| None, |c| c.range)
@@ -194,7 +194,7 @@ impl LanguageServer for WakatimeLanguageServer {
             is_write: true,
             lineno: None,
             language: None,
-            cursorpos: None,
+            cursor_pos: None,
         };
 
         self.send(event).await;
