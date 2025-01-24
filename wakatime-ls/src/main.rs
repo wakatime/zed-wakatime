@@ -38,16 +38,24 @@ struct WakatimeLanguageServer {
 
 impl WakatimeLanguageServer {
     async fn send(&self, event: Event) {
-        // if isWrite is false, and file has not changed since last heartbeat,
+        // if is_write is false, and file has not changed since last heartbeat,
         // and less than 2 minutes since last heartbeat, and do nothing
         const INTERVAL: TimeDelta = TimeDelta::minutes(2);
 
         let mut current_file = self.current_file.lock().await;
         let now = Local::now();
 
+        #[cfg(debug_assertions)]
+        self.client
+            .log_message(
+                MessageType::LOG,
+                format!("Wakatime language server send called, event: {event:?}",),
+            )
+            .await;
+
         if event.uri == current_file.uri
             && now - current_file.timestamp < INTERVAL
-            && event.is_write
+            && !event.is_write
         {
             return;
         }
@@ -102,7 +110,7 @@ impl WakatimeLanguageServer {
                 .log_message(
                     MessageType::LOG,
                     format!(
-                        "Wakatime language server send msg faild: {e:?}, command: {:?}",
+                        "Wakatime language server send msg failed: {e:?}, command: {:?}",
                         command.as_std()
                     ),
                 )
