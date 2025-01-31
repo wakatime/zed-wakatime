@@ -1,6 +1,11 @@
 use std::fs;
 
-use zed_extension_api::{self as zed, Command, LanguageServerId, Result, Worktree};
+use zed_extension_api::{
+    self as zed,
+    serde_json::{self, Value},
+    settings::LspSettings,
+    Command, LanguageServerId, Result, Worktree,
+};
 
 struct WakatimeExtension {
     cached_ls_binary_path: Option<String>,
@@ -179,7 +184,10 @@ impl zed::Extension for WakatimeExtension {
 
         let ls_binary_path = self.language_server_binary_path(language_server_id, worktree)?;
 
-        let args = vec!["--wakatime-cli".to_string(), {
+        let lsp_settings =
+            LspSettings::for_worktree(language_server_id.to_string().as_str(), worktree)?;
+
+        let mut args = vec!["--wakatime-cli".to_string(), {
             use std::env;
             let current = env::current_dir().unwrap();
             let waka_cli = current
@@ -190,6 +198,26 @@ impl zed::Extension for WakatimeExtension {
 
             waka_cli
         }];
+
+        if let Some(settings) = lsp_settings.settings {
+            let settings: Value = serde_json::from_value(settings)
+                .map_err(|_| "Could not parse settings (this should never happen)".to_string())?;
+            settings
+                .get("api-url")
+                .and_then(|value| value.as_str())
+                .map(|value| {
+                    args.push("--api-url".to_string());
+                    args.push(value.to_string());
+                });
+
+            settings
+                .get("api-key")
+                .and_then(|value| value.as_str())
+                .map(|value| {
+                    args.push("--api-key".to_string());
+                    args.push(value.to_string());
+                });
+        }
 
         Ok(Command {
             args,

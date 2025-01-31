@@ -222,7 +222,25 @@ async fn main() {
                 .help("wakatime-cli path")
                 .required(true),
         )
+        .arg(
+            Arg::new("api-url")
+                .short('a')
+                .long("api-url")
+                .help("full url of the api server to be used")
+                .required(false),
+        )
+        .arg(
+            Arg::new("api-key")
+                .short('k')
+                .long("api-key")
+                .help("api key for authenticating with the wakatime api")
+                .required(false),
+        )
         .get_matches();
+
+    let mut settings = Setting::default();
+    settings.api_url = matches.get_one::<String>("api-url").cloned();
+    settings.api_key = matches.get_one::<String>("api-key").cloned();
 
     let wakatime_cli = if let Some(s) = matches.get_one::<String>("wakatime-cli") {
         s.to_string()
@@ -236,7 +254,7 @@ async fn main() {
     let (service, socket) = LspService::new(|client| {
         Arc::new(WakatimeLanguageServer {
             client,
-            settings: ArcSwap::from_pointee(Setting::default()),
+            settings: ArcSwap::from_pointee(settings),
             wakatime_path: wakatime_cli,
             platform: ArcSwap::from_pointee(String::new()),
             current_file: Mutex::new(CurrentFile {
