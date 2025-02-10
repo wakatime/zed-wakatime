@@ -1,5 +1,5 @@
 # zed-wakatime
-![https://zed.dev/extensions?query=wakatime](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.zed.dev%2Fextensions%2Fwakatime&query=%24.data%5B0%5D.download_count&label=download&cacheSeconds=60)
+[![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.zed.dev%2Fextensions%2Fwakatime&query=%24.data%5B0%5D.download_count&label=download&cacheSeconds=60)](https://zed.dev/extensions?query=wakatime)
 
 A [WakaTime](https://wakatime.com/) extension for [Zed](https://zed.dev/).
 
