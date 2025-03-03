@@ -9,6 +9,8 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "cargo"
+    schedule:
+      interval: "daily" # 这里添加了 schedule
     directory: "/"
     groups:
       deps:
