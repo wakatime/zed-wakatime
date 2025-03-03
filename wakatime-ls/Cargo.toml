@@ -7,10 +7,10 @@ repository = "https://github.com/wakatime/zed-wakatime"
 
 [dependencies]
 arc-swap = "1.7.1"
-chrono = "0.4.38"
-clap = "4.5.16"
-serde = "1.0.210"
-serde_json = "1.0.128"
-tokio = { version = "1.39.3", features = ["full"] }
+chrono = "0.4.40"
+clap = "4.5.31"
+serde = "1.0.218"
+serde_json = "1.0.139"
+tokio = { version = "1.43.0", features = ["full"] }
 tower-lsp = "0.20.0"
-url = "2.5.2"
+url = "2.5.4"
