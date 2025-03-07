@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 members = ["wakatime-ls"]
 
 [workspace.package]
-version = "0.1.7"
+version = "0.1.8"
 
 [profile.dist]
 inherits = "release"
