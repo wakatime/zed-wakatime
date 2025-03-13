@@ -4,11 +4,12 @@ use arc_swap::ArcSwap;
 use chrono::{DateTime, Local, TimeDelta};
 use clap::{Arg, Command};
 use serde::Deserialize;
+use serde_json::Value;
 use tokio::{process::Command as TokioCommand, sync::Mutex};
 use tower_lsp::{jsonrpc::Result, lsp_types::*, Client, LanguageServer, LspService, Server};
 
 #[derive(Deserialize, Default)]
-struct Setting {
+struct Settings {
     api_key: Option<String>,
     api_url: Option<String>,
 }
@@ -30,7 +31,7 @@ struct CurrentFile {
 
 struct WakatimeLanguageServer {
     client: Client,
-    settings: ArcSwap<Setting>,
+    settings: ArcSwap<Settings>,
     wakatime_path: String,
     current_file: Mutex<CurrentFile>,
     platform: ArcSwap<String>,
@@ -140,6 +141,30 @@ impl LanguageServer for WakatimeLanguageServer {
             self.platform.store(Arc::new(platform));
         }
 
+        if let Some(initialization_options) = params.initialization_options {
+            let initialization_options: Value = serde_json::from_value(initialization_options)
+                .map_err(|_| "Could not parse settings (this should never happen)".to_string())
+                .unwrap();
+
+            let mut settings = Settings::default();
+
+            if let Some(api_url) = initialization_options
+                .get("api-url")
+                .and_then(Value::as_str)
+            {
+                settings.api_url = Some(api_url.to_string());
+            }
+
+            if let Some(api_key) = initialization_options
+                .get("api-key")
+                .and_then(Value::as_str)
+            {
+                settings.api_key = Some(api_key.to_string());
+            }
+
+            self.settings.swap(Arc::from(settings));
+        }
+
         Ok(InitializeResult {
             server_info: Some(ServerInfo {
                 name: env!("CARGO_PKG_NAME").to_string(),
@@ -236,7 +261,7 @@ async fn main() {
     let (service, socket) = LspService::new(|client| {
         Arc::new(WakatimeLanguageServer {
             client,
-            settings: ArcSwap::from_pointee(Setting::default()),
+            settings: ArcSwap::from_pointee(Settings::default()),
             wakatime_path: wakatime_cli,
             platform: ArcSwap::from_pointee(String::new()),
             current_file: Mutex::new(CurrentFile {
