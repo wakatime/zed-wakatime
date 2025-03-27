@@ -8,7 +8,7 @@ repository = "https://github.com/wakatime/zed-wakatime"
 [dependencies]
 arc-swap = "1.7.1"
 chrono = "0.4.40"
-clap = "4.5.32"
+clap = "4.5.34"
 serde = "1.0.219"
 serde_json = "1.0.140"
 tokio = { version = "1.44.1", features = ["full"] }
