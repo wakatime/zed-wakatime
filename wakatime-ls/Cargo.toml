@@ -11,6 +11,6 @@ chrono = "0.4.40"
 clap = "4.5.35"
 serde = "1.0.219"
 serde_json = "1.0.140"
-tokio = { version = "1.44.1", features = ["full"] }
+tokio = { version = "1.44.2", features = ["full"] }
 tower-lsp = "0.20.0"
 url = "2.5.4"
