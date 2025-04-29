@@ -249,15 +249,11 @@ async fn main() {
         )
         .get_matches();
 
-    let mut wakatime_cli = if let Some(s) = matches.get_one::<String>("wakatime-cli") {
-        s
+    let wakatime_cli = if let Some(s) = matches.get_one::<String>("wakatime-cli") {
+        s.to_string()
     } else {
-        "wakatime-cli"
+        "wakatime-cli".to_string()
     };
-
-    if cfg!(windows) {
-        wakatime_cli = wakatime_cli.trim_start_matches("/");
-    }
 
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
@@ -266,7 +262,7 @@ async fn main() {
         Arc::new(WakatimeLanguageServer {
             client,
             settings: ArcSwap::from_pointee(Settings::default()),
-            wakatime_path: wakatime_cli.to_string(),
+            wakatime_path: wakatime_cli,
             platform: ArcSwap::from_pointee(String::new()),
             current_file: Mutex::new(CurrentFile {
                 uri: String::new(),
