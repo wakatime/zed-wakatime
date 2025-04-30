@@ -7,6 +7,13 @@ struct WakatimeExtension {
     cached_wakatime_cli_binary_path: Option<String>,
 }
 
+fn sanitize_path(path: &str) -> String {
+    match zed::current_platform() {
+        (zed::Os::Windows, _) => path.trim_start_matches("/").to_string(),
+        _ => path.to_string(),
+    }
+}
+
 impl WakatimeExtension {
     fn target_triple(&self, binary: &str) -> Result<String, String> {
         let (platform, arch) = zed::current_platform();
@@ -188,7 +195,7 @@ impl zed::Extension for WakatimeExtension {
                 .unwrap()
                 .to_string();
 
-            waka_cli
+            sanitize_path(waka_cli.as_str())
         }];
 
         Ok(Command {
