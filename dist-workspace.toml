@@ -24,3 +24,5 @@ targets = [
 
 [dist.github-custom-runners]
 global = "ubuntu-22.04"
+x86_64-unknown-linux-gnu = "ubuntu-22.04"
+aarch64-unknown-linux-gnu = "ubuntu-22.04"
