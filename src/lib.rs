@@ -14,6 +14,13 @@ fn sanitize_path(path: &str) -> String {
     }
 }
 
+fn executable_name(binary: &str) -> String {
+    match zed::current_platform() {
+        (zed::Os::Windows, _) => format!("{}.exe", binary),
+        _ => binary.to_string(),
+    }
+}
+
 impl WakatimeExtension {
     fn target_triple(&self, binary: &str) -> Result<String, String> {
         let (platform, arch) = zed::current_platform();
@@ -70,9 +77,9 @@ impl WakatimeExtension {
 
         let version_dir = format!("{binary}-{}", release.version);
         let binary_path = if binary == "wakatime-cli" {
-            format!("{version_dir}/{target_triple}")
+            format!("{version_dir}/{}", executable_name(&target_triple))
         } else {
-            format!("{version_dir}/{binary}")
+            format!("{version_dir}/{}", executable_name(binary))
         };
 
         if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
@@ -116,12 +123,12 @@ impl WakatimeExtension {
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
 
-        if let Some(path) = worktree.which("wakatime-ls") {
+        if let Some(path) = worktree.which(&executable_name("wakatime-ls")) {
             return Ok(path.clone());
         }
 
         let target_triple = self.target_triple("wakatime-ls")?;
-        if let Some(path) = worktree.which(&target_triple) {
+        if let Some(path) = worktree.which(&executable_name(&target_triple)) {
             return Ok(path.clone());
         }
 
@@ -149,7 +156,7 @@ impl WakatimeExtension {
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
 
-        if let Some(path) = worktree.which("wakatime-cli") {
+        if let Some(path) = worktree.which(&executable_name("wakatime-cli")) {
             return Ok(path.clone());
         }
 
