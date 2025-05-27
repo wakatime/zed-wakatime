@@ -25,7 +25,7 @@ Zed setting.Open zed setting file, add your api key
 ```json
 "lsp": {
   "wakatime": {
-    "settings": {
+    "initialization_options": {
       "api-key": "You api key"
     }
   }
