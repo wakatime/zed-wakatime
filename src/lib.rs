@@ -1,10 +1,13 @@
-use std::fs;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use zed_extension_api::{self as zed, Command, LanguageServerId, Result, Worktree};
 
 struct WakatimeExtension {
-    cached_ls_binary_path: Option<String>,
-    cached_wakatime_cli_binary_path: Option<String>,
+    cached_ls_binary_path: Option<PathBuf>,
+    cached_wakatime_cli_binary_path: Option<PathBuf>,
 }
 
 fn sanitize_path(path: &str) -> String {
@@ -57,7 +60,7 @@ impl WakatimeExtension {
         language_server_id: &LanguageServerId,
         binary: &str,
         repo: &str,
-    ) -> Result<String> {
+    ) -> Result<PathBuf> {
         let release = zed::latest_github_release(
             repo,
             zed::GithubReleaseOptions {
@@ -77,9 +80,9 @@ impl WakatimeExtension {
 
         let version_dir = format!("{binary}-{}", release.version);
         let binary_path = if binary == "wakatime-cli" {
-            format!("{version_dir}/{}", executable_name(&target_triple))
+            Path::new(&version_dir).join(executable_name(&target_triple))
         } else {
-            format!("{version_dir}/{}", executable_name(binary))
+            Path::new(&version_dir).join(executable_name(&binary))
         };
 
         if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
@@ -108,7 +111,7 @@ impl WakatimeExtension {
             }
         }
 
-        zed::make_file_executable(&binary_path)?;
+        zed::make_file_executable(binary_path.to_str().unwrap())?;
 
         Ok(binary_path)
     }
@@ -117,24 +120,24 @@ impl WakatimeExtension {
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
-    ) -> Result<String, String> {
+    ) -> Result<PathBuf, String> {
         zed::set_language_server_installation_status(
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
 
         if let Some(path) = worktree.which(&executable_name("wakatime-ls")) {
-            return Ok(path.clone());
+            return Ok(path.into());
         }
 
         let target_triple = self.target_triple("wakatime-ls")?;
         if let Some(path) = worktree.which(&executable_name(&target_triple)) {
-            return Ok(path.clone());
+            return Ok(path.into());
         }
 
         if let Some(path) = &self.cached_ls_binary_path {
             if fs::metadata(path).map_or(false, |stat| stat.is_file()) {
-                return Ok(path.clone());
+                return Ok(path.into());
             }
         }
 
@@ -150,19 +153,19 @@ impl WakatimeExtension {
         &mut self,
         language_server_id: &LanguageServerId,
         worktree: &Worktree,
-    ) -> Result<String, String> {
+    ) -> Result<PathBuf, String> {
         zed::set_language_server_installation_status(
             language_server_id,
             &zed::LanguageServerInstallationStatus::CheckingForUpdate,
         );
 
         if let Some(path) = worktree.which(&executable_name("wakatime-cli")) {
-            return Ok(path.clone());
+            return Ok(path.into());
         }
 
         if let Some(path) = &self.cached_wakatime_cli_binary_path {
             if fs::metadata(path).map_or(false, |stat| stat.is_file()) {
-                return Ok(path.clone());
+                return Ok(path.into());
             }
         }
 
@@ -207,7 +210,7 @@ impl zed::Extension for WakatimeExtension {
 
         Ok(Command {
             args,
-            command: ls_binary_path,
+            command: ls_binary_path.to_str().unwrap().to_owned(),
             env: worktree.shell_env(),
         })
     }
