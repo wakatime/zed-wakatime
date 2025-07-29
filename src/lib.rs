@@ -19,7 +19,7 @@ fn sanitize_path(path: &str) -> String {
 
 fn executable_name(binary: &str) -> String {
     match zed::current_platform() {
-        (zed::Os::Windows, _) => format!("{}.exe", binary),
+        (zed::Os::Windows, _) => format!("{binary}.exe"),
         _ => binary.to_string(),
     }
 }
@@ -76,16 +76,16 @@ impl WakatimeExtension {
             .assets
             .iter()
             .find(|asset| asset.name == asset_name)
-            .ok_or_else(|| format!("no asset found matching {:?}", asset_name))?;
+            .ok_or_else(|| format!("no asset found matching {asset_name:?}"))?;
 
         let version_dir = format!("{binary}-{}", release.version);
         let binary_path = if binary == "wakatime-cli" {
             Path::new(&version_dir).join(executable_name(&target_triple))
         } else {
-            Path::new(&version_dir).join(executable_name(&binary))
+            Path::new(&version_dir).join(executable_name(binary))
         };
 
-        if !fs::metadata(&binary_path).map_or(false, |stat| stat.is_file()) {
+        if !fs::metadata(&binary_path).is_ok_and(|stat| stat.is_file()) {
             zed::set_language_server_installation_status(
                 language_server_id,
                 &zed::LanguageServerInstallationStatus::Downloading,
@@ -136,7 +136,7 @@ impl WakatimeExtension {
         }
 
         if let Some(path) = &self.cached_ls_binary_path {
-            if fs::metadata(path).map_or(false, |stat| stat.is_file()) {
+            if fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
                 return Ok(path.into());
             }
         }
@@ -164,7 +164,7 @@ impl WakatimeExtension {
         }
 
         if let Some(path) = &self.cached_wakatime_cli_binary_path {
-            if fs::metadata(path).map_or(false, |stat| stat.is_file()) {
+            if fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
                 return Ok(path.into());
             }
         }

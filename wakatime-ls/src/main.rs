@@ -207,13 +207,13 @@ impl LanguageServer for WakatimeLanguageServer {
             is_write: false,
             lineno: params
                 .content_changes
-                .get(0)
+                .first()
                 .map_or_else(|| None, |c| c.range)
                 .map(|c| c.start.line as u64),
             language: None,
             cursor_pos: params
                 .content_changes
-                .get(0)
+                .first()
                 .map_or_else(|| None, |c| c.range)
                 .map(|c| c.start.character as u64),
         };
