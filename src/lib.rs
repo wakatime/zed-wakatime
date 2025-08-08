@@ -10,6 +10,34 @@ struct WakatimeExtension {
     cached_wakatime_cli_binary_path: Option<PathBuf>,
 }
 
+fn is_absolute_path_wasm(path: &PathBuf) -> bool {
+    let path_str = match path.to_str() {
+        Some(s) => s,
+        None => return false,
+    };
+
+    match zed::current_platform().0 {
+        zed::Os::Windows => {
+            // Windows: Check if the path is an absolute path (e.g., C:\ or C:/)
+            let bytes = path_str.as_bytes();
+            if bytes.len() >= 3 {
+                if bytes[0].is_ascii_alphabetic()
+                    && bytes[1] == b':'
+                    && (bytes[2] == b'\\' || bytes[2] == b'/')
+                {
+                    return true;
+                }
+            }
+            // Windows：Check if it is a UNC path (e.g., \\server\share)
+            path_str.starts_with(r"\\")
+        }
+        _ => {
+            // Mac/Linux: check if it is an absolute path (e.g., /usr)
+            path_str.starts_with('/')
+        }
+    }
+}
+
 fn sanitize_path(path: &str) -> String {
     match zed::current_platform() {
         (zed::Os::Windows, _) => path.trim_start_matches("/").to_string(),
@@ -199,12 +227,15 @@ impl zed::Extension for WakatimeExtension {
         let args = vec!["--wakatime-cli".to_string(), {
             use std::env;
             let current = env::current_dir().unwrap();
-            let waka_cli = current
-                .join(wakatime_cli_binary_path)
-                .to_str()
-                .unwrap()
-                .to_string();
-
+            let waka_cli = if is_absolute_path_wasm(&wakatime_cli_binary_path) {
+                wakatime_cli_binary_path.to_string_lossy().to_string()
+            } else {
+                current
+                    .join(wakatime_cli_binary_path)
+                    .to_str()
+                    .unwrap()
+                    .to_string()
+            };
             sanitize_path(waka_cli.as_str())
         }];
 
