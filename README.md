@@ -3,7 +3,7 @@
 
 A [WakaTime](https://wakatime.com/) extension for [Zed](https://zed.dev/).
 
-Uses the [wakatime-ls](https://github.com/wakatime/zed-wakatime/tree/master/wakatime-ls) to receive edit events from Zed and send hearbeats to WakaTime by [wakatime-cli](https://github.com/wakatime/wakatime-cli).
+Uses the [wakatime-ls](https://github.com/wakatime/zed-wakatime/tree/master/wakatime-ls) to receive edit events from Zed and send heartbeats to WakaTime by [wakatime-cli](https://github.com/wakatime/wakatime-cli).
 
 ## Install
 Search "wakatime" in extension page, and install it.
