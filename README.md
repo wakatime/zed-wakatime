@@ -19,6 +19,7 @@ create a file named `.wakatime.cfg`, locate your HOME directory.
 [settings]
 api_key = Your api key
 ```
+Go through up [wakatime-cli](https://github.com/wakatime/wakatime-cli/blob/develop/USAGE.md)'s documentation for more options.
 
 ### zed setting file
 Zed setting.Open zed setting file, add your api key
