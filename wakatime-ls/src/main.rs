@@ -37,6 +37,17 @@ struct WakatimeLanguageServer {
     platform: ArcSwap<String>,
 }
 
+// Extract filepath string from 'file://' URI.
+//
+// Example:
+// file:///var/log/test.txt    -> /var/log/test.txt
+// file:///C:/path/to/file.txt -> C:\path\to\file.txt
+fn extract_uri_string(uri: &url::Url) -> String {
+    uri.to_file_path()
+        .map(|path: std::path::PathBuf| path.to_string_lossy().to_string())
+        .unwrap_or_else(|()| uri[url::Position::BeforeUsername..].to_string())
+}
+
 impl WakatimeLanguageServer {
     async fn send(&self, event: Event) {
         // if is_write is false, and file has not changed since last heartbeat,
@@ -191,7 +202,7 @@ impl LanguageServer for WakatimeLanguageServer {
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let event = Event {
-            uri: params.text_document.uri[url::Position::BeforeUsername..].to_string(),
+            uri: extract_uri_string(&params.text_document.uri),
             is_write: false,
             lineno: None,
             language: Some(params.text_document.language_id.clone()),
@@ -203,7 +214,7 @@ impl LanguageServer for WakatimeLanguageServer {
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let event = Event {
-            uri: params.text_document.uri[url::Position::BeforeUsername..].to_string(),
+            uri: extract_uri_string(&params.text_document.uri),
             is_write: false,
             lineno: params
                 .content_changes
@@ -223,7 +234,7 @@ impl LanguageServer for WakatimeLanguageServer {
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
         let event = Event {
-            uri: params.text_document.uri[url::Position::BeforeUsername..].to_string(),
+            uri: extract_uri_string(&params.text_document.uri),
             is_write: true,
             lineno: None,
             language: None,
