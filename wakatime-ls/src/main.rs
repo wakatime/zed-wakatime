@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
-use chrono::{DateTime, Local, TimeDelta};
 use clap::{Arg, Command};
+use jiff::{SignedDuration, Timestamp};
 use serde::Deserialize;
 use serde_json::Value;
 use tokio::{process::Command as TokioCommand, sync::Mutex};
@@ -26,7 +26,7 @@ struct Event {
 #[derive(Debug)]
 struct CurrentFile {
     uri: String,
-    timestamp: DateTime<Local>,
+    timestamp: Timestamp,
 }
 
 struct WakatimeLanguageServer {
@@ -54,10 +54,10 @@ impl WakatimeLanguageServer {
     async fn send(&self, event: Event) {
         // if is_write is false, and file has not changed since last heartbeat,
         // and less than 2 minutes since last heartbeat, and do nothing
-        const INTERVAL: TimeDelta = TimeDelta::minutes(2);
+        const INTERVAL: SignedDuration = SignedDuration::from_mins(2);
 
         let mut current_file = self.current_file.lock().await;
-        let now = Local::now();
+        let now = Timestamp::now();
 
         #[cfg(debug_assertions)]
         self.client
@@ -68,7 +68,7 @@ impl WakatimeLanguageServer {
             .await;
 
         if event.uri == current_file.uri
-            && now - current_file.timestamp < INTERVAL
+            && now.duration_since(current_file.timestamp) < INTERVAL
             && !event.is_write
         {
             return;
@@ -78,7 +78,7 @@ impl WakatimeLanguageServer {
 
         command
             .arg("--time")
-            .arg((now.timestamp() as f64).to_string())
+            .arg((now.as_second() as f64).to_string())
             .arg("--write")
             .arg(event.is_write.to_string())
             .arg("--entity")
@@ -322,7 +322,7 @@ async fn main() {
             platform: ArcSwap::from_pointee(String::new()),
             current_file: Mutex::new(CurrentFile {
                 uri: String::new(),
-                timestamp: Local::now(),
+                timestamp: Timestamp::now(),
             }),
         })
     });
