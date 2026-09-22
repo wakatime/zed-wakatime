@@ -8,9 +8,10 @@ repository = "https://github.com/wakatime/zed-wakatime"
 [dependencies]
 arc-swap = "1.7.1"
 clap = "4.5.49"
+fd-lock = "4.0.4"
 jiff = { version = "0.2.24", default-features = false, features = ["std"] }
 serde = "1.0.228"
 serde_json = "1.0.150"
-tokio = { version = "1.48.0", features = ["io-std", "macros", "process", "rt-multi-thread"], default-features = false }
+tokio = { version = "1.48.0", features = ["io-std", "macros", "process", "rt-multi-thread", "time"], default-features = false }
 tower-lsp = "0.20.0"
 url = "2.5.7"
