@@ -1,11 +1,16 @@
 use std::sync::Arc;
+use std::time::Duration;
+use std::{env, fs, path::PathBuf};
 
 use arc_swap::ArcSwap;
 use clap::{Arg, Command};
+use fd_lock::RwLock as LockFile;
 use jiff::{SignedDuration, Timestamp};
 use serde::Deserialize;
 use serde_json::Value;
 use tokio::{process::Command as TokioCommand, sync::Mutex};
+use tower_lsp::lsp_types::notification::Progress;
+use tower_lsp::lsp_types::request::WorkDoneProgressCreate;
 use tower_lsp::{jsonrpc::Result, lsp_types::*, Client, LanguageServer, LspService, Server};
 
 #[derive(Deserialize, Default)]
@@ -37,6 +42,7 @@ struct WakatimeLanguageServer {
     alternate_project: String,
     current_file: Mutex<CurrentFile>,
     platform: ArcSwap<String>,
+    client_process_id: ArcSwap<Option<u32>>,
 }
 
 // Extract filepath string from 'file://' URI.
@@ -48,6 +54,132 @@ fn extract_uri_string(uri: &url::Url) -> String {
     uri.to_file_path()
         .map(|path: std::path::PathBuf| path.to_string_lossy().to_string())
         .unwrap_or_else(|()| uri[url::Position::BeforeUsername..].to_string())
+}
+
+const STATUS_BAR_INTERVAL: Duration = Duration::from_secs(120);
+const STATUS_BAR_RETRY: Duration = Duration::from_secs(30);
+const STATUS_BAR_TOKEN: &str = "wakatime-today";
+const STATUS_BAR_TITLE: &str = "WakaTime";
+
+fn wakatime_home() -> Option<PathBuf> {
+    for key in ["WAKATIME_HOME", "HOME", "USERPROFILE"] {
+        if let Some(dir) = env::var_os(key).filter(|dir| !dir.is_empty()) {
+            return Some(PathBuf::from(dir));
+        }
+    }
+
+    None
+}
+
+fn status_bar_enabled() -> bool {
+    let Some(config) = wakatime_home().map(|dir| dir.join(".wakatime.cfg")) else {
+        return true;
+    };
+
+    let Ok(contents) = fs::read_to_string(config) else {
+        return true;
+    };
+
+    let setting = contents
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .find(|(key, _)| key.trim() == "status_bar_enabled");
+
+    let Some((_, value)) = setting else {
+        return true;
+    };
+
+    value.trim().eq_ignore_ascii_case("true")
+}
+
+fn status_bar_lock(client_process_id: Option<u32>) -> Option<LockFile<fs::File>> {
+    let name = match client_process_id {
+        Some(process_id) => format!("wakatime-ls-status-bar-{process_id}.lock"),
+        None => "wakatime-ls-status-bar.lock".to_string(),
+    };
+
+    let path = env::temp_dir().join(name);
+    let file = fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(path)
+        .ok()?;
+
+    Some(LockFile::new(file))
+}
+
+async fn today(wakatime_path: &str) -> Option<String> {
+    let output = TokioCommand::new(wakatime_path)
+        .arg("--today")
+        .output()
+        .await
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let today = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+    (!today.is_empty()).then_some(today)
+}
+
+async fn report_status_bar(client: &Client, message: String) {
+    client
+        .send_notification::<Progress>(ProgressParams {
+            token: ProgressToken::String(STATUS_BAR_TOKEN.to_string()),
+            value: ProgressParamsValue::WorkDone(WorkDoneProgress::Report(
+                WorkDoneProgressReport {
+                    message: Some(message),
+                    ..Default::default()
+                },
+            )),
+        })
+        .await;
+}
+
+async fn run_status_bar(client: Client, wakatime_path: String, client_process_id: Option<u32>) {
+    let Some(mut lock) = status_bar_lock(client_process_id) else {
+        return;
+    };
+
+    let _guard = loop {
+        match lock.try_write() {
+            Ok(guard) => break guard,
+            Err(_) => tokio::time::sleep(STATUS_BAR_RETRY).await,
+        }
+    };
+
+    let created = client
+        .send_request::<WorkDoneProgressCreate>(WorkDoneProgressCreateParams {
+            token: ProgressToken::String(STATUS_BAR_TOKEN.to_string()),
+        })
+        .await;
+
+    if created.is_err() {
+        return;
+    }
+
+    client
+        .send_notification::<Progress>(ProgressParams {
+            token: ProgressToken::String(STATUS_BAR_TOKEN.to_string()),
+            value: ProgressParamsValue::WorkDone(WorkDoneProgress::Begin(WorkDoneProgressBegin {
+                title: STATUS_BAR_TITLE.to_string(),
+                cancellable: Some(false),
+                message: today(&wakatime_path).await,
+                percentage: None,
+            })),
+        })
+        .await;
+
+    loop {
+        tokio::time::sleep(STATUS_BAR_INTERVAL).await;
+
+        if let Some(today) = today(&wakatime_path).await {
+            report_status_bar(&client, today).await;
+        }
+    }
 }
 
 impl WakatimeLanguageServer {
@@ -151,6 +283,8 @@ impl WakatimeLanguageServer {
 #[tower_lsp::async_trait]
 impl LanguageServer for WakatimeLanguageServer {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        self.client_process_id.store(Arc::new(params.process_id));
+
         if let Some(ref client_info) = params.client_info {
             let mut platform = String::new();
             platform.push_str("Zed");
@@ -215,6 +349,14 @@ impl LanguageServer for WakatimeLanguageServer {
         self.client
             .log_message(MessageType::INFO, "Wakatime language server initialized")
             .await;
+
+        if status_bar_enabled() {
+            tokio::spawn(run_status_bar(
+                self.client.clone(),
+                self.wakatime_path.clone(),
+                **self.client_process_id.load(),
+            ));
+        }
     }
 
     async fn shutdown(&self) -> Result<()> {
@@ -320,6 +462,7 @@ async fn main() {
             project_folder,
             alternate_project,
             platform: ArcSwap::from_pointee(String::new()),
+            client_process_id: ArcSwap::from_pointee(None),
             current_file: Mutex::new(CurrentFile {
                 uri: String::new(),
                 timestamp: Timestamp::now(),
