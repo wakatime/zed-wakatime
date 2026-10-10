@@ -10,7 +10,8 @@ struct WakatimeExtension {
     cached_wakatime_cli_binary_path: Option<PathBuf>,
 }
 
-fn is_absolute_path_wasm(path: &PathBuf) -> bool {
+// Use the host platform's path rules because this extension runs in WASM.
+fn is_absolute_path_wasm(path: &Path) -> bool {
     let Some(path_str) = path.to_str() else {
         return false;
     };
@@ -19,13 +20,12 @@ fn is_absolute_path_wasm(path: &PathBuf) -> bool {
         zed::Os::Windows => {
             // Windows: Check if the path is an absolute path (e.g., C:\ or C:/)
             let bytes = path_str.as_bytes();
-            if bytes.len() >= 3 {
-                if bytes[0].is_ascii_alphabetic()
-                    && bytes[1] == b':'
-                    && (bytes[2] == b'\\' || bytes[2] == b'/')
-                {
-                    return true;
-                }
+            if bytes.len() >= 3
+                && bytes[0].is_ascii_alphabetic()
+                && bytes[1] == b':'
+                && (bytes[2] == b'\\' || bytes[2] == b'/')
+            {
+                return true;
             }
             // Windows：Check if it is a UNC path (e.g., \\server\share)
             path_str.starts_with(r"\\")
