@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use std::{env, fs, path::PathBuf};
+use std::{collections::HashMap, env, fs, path::PathBuf};
 
 use arc_swap::ArcSwap;
 use clap::{Arg, Command};
@@ -12,6 +12,9 @@ use tokio::{process::Command as TokioCommand, sync::Mutex};
 use tower_lsp::lsp_types::notification::Progress;
 use tower_lsp::lsp_types::request::WorkDoneProgressCreate;
 use tower_lsp::{jsonrpc::Result, lsp_types::*, Client, LanguageServer, LspService, Server};
+
+#[cfg(all(test, unix))]
+mod tests;
 
 #[derive(Deserialize, Default)]
 struct Settings {
@@ -53,6 +56,8 @@ struct WakatimeLanguageServer {
     project_folder: String,
     alternate_project: String,
     current_file: Mutex<CurrentFile>,
+    // Only didOpen carries the language ID; retain it for later changes and saves.
+    document_languages: Mutex<HashMap<url::Url, String>>,
     platform: ArcSwap<String>,
     work_done_progress: AtomicBool,
 }
@@ -394,11 +399,17 @@ impl LanguageServer for WakatimeLanguageServer {
     }
 
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
+        // Update even when the opening heartbeat is throttled, e.g. after a language switch.
+        self.document_languages.lock().await.insert(
+            params.text_document.uri.clone(),
+            params.text_document.language_id.clone(),
+        );
+
         let event = Event {
             uri: extract_uri_string(&params.text_document.uri),
             is_write: false,
             lineno: None,
-            language: Some(params.text_document.language_id.clone()),
+            language: Some(params.text_document.language_id),
             cursor_pos: None,
         };
 
@@ -406,6 +417,12 @@ impl LanguageServer for WakatimeLanguageServer {
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
+        let language = self
+            .document_languages
+            .lock()
+            .await
+            .get(&params.text_document.uri)
+            .cloned();
         let event = Event {
             uri: extract_uri_string(&params.text_document.uri),
             is_write: false,
@@ -414,7 +431,7 @@ impl LanguageServer for WakatimeLanguageServer {
                 .first()
                 .map_or_else(|| None, |c| c.range)
                 .map(|c| c.start.line as u64),
-            language: None,
+            language,
             cursor_pos: params
                 .content_changes
                 .first()
@@ -426,15 +443,28 @@ impl LanguageServer for WakatimeLanguageServer {
     }
 
     async fn did_save(&self, params: DidSaveTextDocumentParams) {
+        let language = self
+            .document_languages
+            .lock()
+            .await
+            .get(&params.text_document.uri)
+            .cloned();
         let event = Event {
             uri: extract_uri_string(&params.text_document.uri),
             is_write: true,
             lineno: None,
-            language: None,
+            language,
             cursor_pos: None,
         };
 
         self.send(event).await;
+    }
+
+    async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        self.document_languages
+            .lock()
+            .await
+            .remove(&params.text_document.uri);
     }
 }
 
@@ -493,6 +523,7 @@ async fn main() {
             alternate_project,
             platform: ArcSwap::from_pointee(String::new()),
             work_done_progress: AtomicBool::new(false),
+            document_languages: Mutex::new(HashMap::new()),
             current_file: Mutex::new(CurrentFile {
                 uri: String::new(),
                 timestamp: Timestamp::now(),
