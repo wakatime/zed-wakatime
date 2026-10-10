@@ -16,6 +16,8 @@ heartbeats to WakaTime without interrupting your workflow.
 - Reports the current file, language, cursor position, and project metadata.
 - Sends save events immediately and throttles repeated edit heartbeats for the
   current file to once every two minutes.
+- Shows today's total coding time in Zed's status bar, refreshed every two
+  minutes.
 - Uses an existing `wakatime-cli` from your shell `PATH`, or downloads it
   automatically when needed.
 - Downloads and manages the matching `wakatime-ls` language server
@@ -93,6 +95,18 @@ For a self-hosted or compatible WakaTime API, you can also provide `api-url`:
     }
   }
 }
+```
+
+### Status bar
+
+Today's total coding time is shown in Zed's status bar. It is read from
+`wakatime-cli --today`, so it follows the same account and API settings as your
+heartbeats. To hide it, disable the status bar in `~/.wakatime.cfg`, the same
+setting used by the VS Code and JetBrains integrations:
+
+```ini
+[settings]
+status_bar_enabled = false
 ```
 
 Reload the workspace or restart Zed after changing the configuration so the
